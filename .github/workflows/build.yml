@@ -24,16 +24,16 @@ jobs:
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           make sprd_sharkl3_defconfig
-          ./scripts/config --enable CONFIG_DEVTMPFS
-          ./scripts/config --enable CONFIG_DEVTMPFS_MOUNT
-          ./scripts/config --enable CONFIG_VT
-          ./scripts/config --enable CONFIG_VT_CONSOLE
-          ./scripts/config --enable CONFIG_NAMESPACES
-          ./scripts/config --enable CONFIG_SYSVIPC
-          ./scripts/config --enable CONFIG_FHANDLE
-          ./scripts/config --enable CONFIG_POSIX_MQUEUE
-          ./scripts/config --enable CONFIG_CGROUPS
-          ./scripts/config --disable CONFIG_ANDROID_PARANOID_NETWORK
+          ./scripts/config --enable DEVTMPFS
+          ./scripts/config --enable DEVTMPFS_MOUNT
+          ./scripts/config --enable VT
+          ./scripts/config --enable VT_CONSOLE
+          ./scripts/config --enable NAMESPACES
+          ./scripts/config --enable SYSVIPC
+          ./scripts/config --enable FHANDLE
+          ./scripts/config --enable POSIX_MQUEUE
+          ./scripts/config --enable CGROUPS
+          ./scripts/config --disable ANDROID_PARANOID_NETWORK
           make olddefconfig
           grep -E "CONFIG_DEVTMPFS|CONFIG_VT|CONFIG_ANDROID_PARANOID_NETWORK" .config
 
@@ -42,8 +42,6 @@ jobs:
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          export CC=clang-12
-          export CLANG_TRIPLE=aarch64-linux-gnu-
           make -j$(nproc) CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
           ls -lh arch/arm64/boot/Image.gz
 
@@ -57,7 +55,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.3-debian-kernel
+          tag_name: v1.4-debian-kernel
           name: Wiko Y82 / SC9863A Debian Kernel Image.gz
           files: kernel/arch/arm64/boot/Image.gz
         env:
