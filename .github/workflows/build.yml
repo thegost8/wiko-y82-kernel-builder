@@ -57,11 +57,19 @@ jobs:
       - name: Compile Kernel Image.gz with GCC
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz 2>&1 | tee ../build.log
           ls -la arch/arm64/boot/Image.gz
 
       - name: Upload Kernel Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: kernel-Image.gz
           path: kernel/arch/arm64/boot/Image.gz
+
+      - name: Upload Build Log on Failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
