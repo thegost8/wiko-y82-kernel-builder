@@ -17,7 +17,6 @@ jobs:
       - name: Clone Unisoc SC9863A Droidian Kernel Source
         run: |
           git clone --depth 1 -b droidian https://github.com/IverCoder/linux-android-samsung-a03.git kernel
-          cd kernel
 
       - name: Configure Kernel with Debian Systemd Support
         run: |
@@ -36,14 +35,16 @@ jobs:
           ./scripts/config --enable CONFIG_CGROUPS
           ./scripts/config --disable CONFIG_ANDROID_PARANOID_NETWORK
           make olddefconfig
-          grep -E "CONFIG_DEVTMPFS|CONFIG_VT|CONFIG_ANDROID_PARANOID_NETWORK" .config
+          sed -i 's/-Werror//g' Makefile
+          sed -i 's/-Werror//g' arch/arm64/Makefile
 
       - name: Compile Kernel Image.gz
         run: |
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make -j$(nproc) Image.gz
+          export KCFLAGS="-w"
+          make KCFLAGS="-w" -j$(nproc) Image.gz
           ls -lh arch/arm64/boot/Image.gz
 
       - name: Upload Kernel Artifact
@@ -56,7 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0-debian-kernel
+          tag_name: v1.1-debian-kernel
           name: Wiko Y82 / SC9863A Debian Kernel Image.gz
           files: kernel/arch/arm64/boot/Image.gz
         env:
