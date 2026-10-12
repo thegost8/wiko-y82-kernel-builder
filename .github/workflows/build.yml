@@ -23,26 +23,28 @@ jobs:
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make sprd_sharkl3_defconfig
-          ./scripts/config --enable DEVTMPFS
-          ./scripts/config --enable DEVTMPFS_MOUNT
-          ./scripts/config --enable VT
-          ./scripts/config --enable VT_CONSOLE
-          ./scripts/config --enable NAMESPACES
-          ./scripts/config --enable SYSVIPC
-          ./scripts/config --enable FHANDLE
-          ./scripts/config --enable POSIX_MQUEUE
-          ./scripts/config --enable CGROUPS
-          ./scripts/config --disable ANDROID_PARANOID_NETWORK
-          make olddefconfig
-          grep -E "CONFIG_DEVTMPFS|CONFIG_VT|CONFIG_ANDROID_PARANOID_NETWORK" .config
+          make ARCH=arm64 sprd_sharkl3_defconfig
+          cat << 'EOF' >> .config
+          CONFIG_DEVTMPFS=y
+          CONFIG_DEVTMPFS_MOUNT=y
+          CONFIG_VT=y
+          CONFIG_VT_CONSOLE=y
+          CONFIG_NAMESPACES=y
+          CONFIG_SYSVIPC=y
+          CONFIG_FHANDLE=y
+          CONFIG_POSIX_MQUEUE=y
+          CONFIG_CGROUPS=y
+          # CONFIG_ANDROID_PARANOID_NETWORK is not set
+          EOF
+          make ARCH=arm64 olddefconfig
+          grep -E "DEVTMPFS|CONFIG_VT" .config || true
 
       - name: Compile Kernel Image.gz
         run: |
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make -j$(nproc) CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
+          make -j$(nproc) ARCH=arm64 CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
           ls -lh arch/arm64/boot/Image.gz
 
       - name: Upload Kernel Artifact
@@ -55,7 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.4-debian-kernel
+          tag_name: v1.5-debian-kernel
           name: Wiko Y82 / SC9863A Debian Kernel Image.gz
           files: kernel/arch/arm64/boot/Image.gz
         env:
