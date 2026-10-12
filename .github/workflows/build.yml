@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -28,7 +31,7 @@ jobs:
           find . -name "*.sh" -exec chmod +x {} +
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make ARCH=arm64 sprd/sprd_sharkl3_defconfig
+          make ARCH=arm64 teclast/p20hd_defconfig
           cat << 'EOF' >> .config
           CONFIG_DEVTMPFS=y
           CONFIG_DEVTMPFS_MOUNT=y
@@ -60,16 +63,23 @@ jobs:
           make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz 2>&1 | tee ../build.log
           ls -la arch/arm64/boot/Image.gz
 
-      - name: Upload Kernel Artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-Image.gz
-          path: kernel/arch/arm64/boot/Image.gz
+      - name: Push Error Log to branch on Failure
+        if: failure()
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -B error-log
+          tail -n 120 build.log > ERROR.txt
+          git add ERROR.txt
+          git commit -m "log: compilation error"
+          git push -f origin error-log
 
-      - name: Upload Build Log on Failure
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Create Release with Kernel
+        if: success()
+        uses: softprops/action-gh-release@v2
         with:
-          name: build-log
-          path: build.log
+          tag_name: v1.0-wiko-y82-debian-kernel
+          name: Wiko Y82 (SC9863A) Debian 13 Kernel Image.gz
+          files: kernel/arch/arm64/boot/Image.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
