@@ -15,7 +15,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev libyaml-dev
+          sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev
 
       - name: Checkout Builder Repo
         uses: actions/checkout@v4
@@ -52,6 +52,9 @@ jobs:
           sed -i 's/HOSTCFLAGS   :=/HOSTCFLAGS   := -fcommon /g' Makefile
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c_shipped 2>/dev/null || true
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c 2>/dev/null || true
+          # Disable broken yamltree in dtc
+          sed -i 's/dtc-objs.*yamltree.o//g' scripts/dtc/Makefile
+          sed -i 's/-I\$(src)\/libfdt/-I\$(src)\/libfdt -DNO_YAML/g' scripts/dtc/Makefile
           # Bypass prepare-compiler-check
           python3 -c "
           with open('Makefile', 'r') as f: text = f.read()
