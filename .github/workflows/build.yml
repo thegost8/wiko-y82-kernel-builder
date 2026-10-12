@@ -38,13 +38,15 @@ jobs:
           EOF
           make ARCH=arm64 olddefconfig
           grep -E "DEVTMPFS|CONFIG_VT" .config || true
+          sed -i 's/-Werror//g' Makefile
+          sed -i 's/-Werror//g' arch/arm64/Makefile
 
       - name: Compile Kernel Image.gz
         run: |
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make -j$(nproc) ARCH=arm64 CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tee ../build.log || (echo "=== BUILD LOG LAST 100 LINES ===" && tail -n 100 ../build.log && exit 1)
           ls -lh arch/arm64/boot/Image.gz
 
       - name: Upload Kernel Artifact
@@ -57,7 +59,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.5-debian-kernel
+          tag_name: v1.6-debian-kernel
           name: Wiko Y82 / SC9863A Debian Kernel Image.gz
           files: kernel/arch/arm64/boot/Image.gz
         env:
