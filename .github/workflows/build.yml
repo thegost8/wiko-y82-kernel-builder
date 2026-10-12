@@ -22,7 +22,7 @@ jobs:
 
       - name: Clone Unisoc SC9863A Kernel Source
         run: |
-          git clone --depth 1 https://github.com/strongtz/linux-sprd.git kernel
+          git clone --depth 1 -b p20hd https://github.com/ex1tium/linux-teclast-p20hd.git kernel
 
       - name: Configure Kernel with Debian Systemd Support
         run: |
@@ -31,7 +31,7 @@ jobs:
           find . -name "*.sh" -exec chmod +x {} +
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make ARCH=arm64 sprd_sharkl3_defconfig
+          make ARCH=arm64 sprd/sprd_sharkl3_defconfig
           cat << 'EOF' >> .config
           CONFIG_DEVTMPFS=y
           CONFIG_DEVTMPFS_MOUNT=y
@@ -57,24 +57,10 @@ jobs:
           sed -i 's/-I\$(src)\/libfdt/-I\$(src)\/libfdt -DNO_YAML/g' scripts/dtc/Makefile
 
       - name: Compile Kernel Image.gz with GCC
-        id: compile
-        continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz > ../full_build.log 2>&1
-          test -f arch/arm64/boot/Image.gz
-
-      - name: Save Error Log to Git
-        if: steps.compile.outcome != 'success'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git checkout -B build-error-log
-          grep -B 3 -A 10 "error:" full_build.log | head -n 150 > ./ERROR_SUMMARY.md || tail -n 100 full_build.log > ./ERROR_SUMMARY.md
-          git add ERROR_SUMMARY.md
-          git commit -m "docs: error summary log" || true
-          git push -f origin build-error-log || true
-          exit 1
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz
+          ls -la arch/arm64/boot/Image.gz
 
       - name: Create Release with Kernel
         uses: softprops/action-gh-release@v2
