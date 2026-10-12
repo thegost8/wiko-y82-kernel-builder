@@ -15,7 +15,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev
+          sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev libyaml-dev
 
       - name: Checkout Builder Repo
         uses: actions/checkout@v4
@@ -49,6 +49,9 @@ jobs:
           make ARCH=arm64 olddefconfig
           sed -i 's/-Werror//g' Makefile
           sed -i 's/-Werror//g' arch/arm64/Makefile
+          sed -i 's/HOSTCFLAGS   :=/HOSTCFLAGS   := -fcommon /g' Makefile
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c_shipped 2>/dev/null || true
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c 2>/dev/null || true
           # Bypass prepare-compiler-check
           python3 -c "
           with open('Makefile', 'r') as f: text = f.read()
@@ -61,7 +64,7 @@ jobs:
         continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tail -n 80 > error_summary.txt
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz 2>&1 | tail -n 80 > error_summary.txt
           test -f arch/arm64/boot/Image.gz
 
       - name: Save Error Log to Git
