@@ -1,0 +1,63 @@
+name: Build Wiko Y82 Linux Kernel for Debian 13
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu make bc bison flex libssl-dev libncurses-dev libelf-dev
+
+      - name: Clone Unisoc SC9863A Droidian Kernel Source
+        run: |
+          git clone --depth 1 -b droidian https://github.com/IverCoder/linux-android-samsung-a03.git kernel
+          cd kernel
+
+      - name: Configure Kernel with Debian Systemd Support
+        run: |
+          cd kernel
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make sprd/sprd_sharkl3_defconfig
+          ./scripts/config --enable CONFIG_DEVTMPFS
+          ./scripts/config --enable CONFIG_DEVTMPFS_MOUNT
+          ./scripts/config --enable CONFIG_VT
+          ./scripts/config --enable CONFIG_VT_CONSOLE
+          ./scripts/config --enable CONFIG_NAMESPACES
+          ./scripts/config --enable CONFIG_SYSVIPC
+          ./scripts/config --enable CONFIG_FHANDLE
+          ./scripts/config --enable CONFIG_POSIX_MQUEUE
+          ./scripts/config --enable CONFIG_CGROUPS
+          ./scripts/config --disable CONFIG_ANDROID_PARANOID_NETWORK
+          make olddefconfig
+          grep -E "CONFIG_DEVTMPFS|CONFIG_VT|CONFIG_ANDROID_PARANOID_NETWORK" .config
+
+      - name: Compile Kernel Image.gz
+        run: |
+          cd kernel
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make -j$(nproc) Image.gz
+          ls -lh arch/arm64/boot/Image.gz
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image.gz
+          path: kernel/arch/arm64/boot/Image.gz
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0-debian-kernel
+          name: Wiko Y82 / SC9863A Debian Kernel Image.gz
+          files: kernel/arch/arm64/boot/Image.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
