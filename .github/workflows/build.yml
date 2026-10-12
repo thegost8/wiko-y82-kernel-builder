@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tail -n 80 > ../error_summary.txt
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tail -n 80 > error_summary.txt
           test -f arch/arm64/boot/Image.gz
 
       - name: Save Error Log to Git
@@ -62,7 +62,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout -B build-error-log
-          cp ../error_summary.txt ./ERROR_SUMMARY.md
+          cp kernel/error_summary.txt ./ERROR_SUMMARY.md || echo "No log" > ERROR_SUMMARY.md
           git add ERROR_SUMMARY.md
           git commit -m "docs: error summary log" || true
           git push -f origin build-error-log || true
