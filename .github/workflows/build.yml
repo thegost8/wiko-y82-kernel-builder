@@ -5,9 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -58,30 +55,13 @@ jobs:
           sed -i 's/BATTERY_SCUD_SDI,/BATTERY_SCUD_SDI, BATTERY_SCUD_ATL,/g' drivers/power/supply/battery_id_via_adc.h
 
       - name: Compile Kernel Image.gz with GCC
-        id: compile
-        continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz > ../full_build.log 2>&1
-          test -f arch/arm64/boot/Image.gz
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz
+          ls -la arch/arm64/boot/Image.gz
 
-      - name: Save Error Log to Git
-        if: steps.compile.outcome != 'success'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git checkout -B build-error-log
-          tail -n 120 full_build.log > ./ERROR_SUMMARY.md
-          git add ERROR_SUMMARY.md
-          git commit -m "docs: error summary log" || true
-          git push -f origin build-error-log || true
-          exit 1
-
-      - name: Create Release with Kernel
-        uses: softprops/action-gh-release@v2
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v1.0-wiko-y82-debian-kernel
-          name: Wiko Y82 (SC9863A) Debian 13 Kernel Image.gz
-          files: kernel/arch/arm64/boot/Image.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: kernel-Image.gz
+          path: kernel/arch/arm64/boot/Image.gz
