@@ -27,6 +27,8 @@ jobs:
       - name: Configure Kernel with Debian Systemd Support
         run: |
           cd kernel
+          chmod -R +x scripts/
+          find . -name "*.sh" -exec chmod +x {} +
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           make ARCH=arm64 sprd_sharkl3_defconfig
@@ -60,14 +62,17 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout -B build-error-log
-          cp error_summary.txt ./ERROR_SUMMARY.md
+          cp ../error_summary.txt ./ERROR_SUMMARY.md
           git add ERROR_SUMMARY.md
           git commit -m "docs: error summary log" || true
           git push -f origin build-error-log || true
           exit 1
 
-      - name: Upload Kernel Artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Release with Kernel
+        uses: softprops/action-gh-release@v2
         with:
-          name: Image.gz
-          path: kernel/arch/arm64/boot/Image.gz
+          tag_name: v1.0-wiko-y82-debian-kernel
+          name: Wiko Y82 (SC9863A) Debian 13 Kernel Image.gz
+          files: kernel/arch/arm64/boot/Image.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
