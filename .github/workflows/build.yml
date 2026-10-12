@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -41,9 +45,20 @@ jobs:
           sed -i 's/-Werror//g' arch/arm64/Makefile
 
       - name: Compile Kernel Image.gz
+        id: compile
+        continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tail -n 80 > ../error_summary.txt
+          test -f arch/arm64/boot/Image.gz
+
+      - name: Report Build Log to GitHub Issue
+        if: steps.compile.outcome != 'success'
+        run: |
+          gh issue create --title "Build Error Log" --body-file error_summary.txt
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
