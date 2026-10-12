@@ -55,6 +55,7 @@ jobs:
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c 2>/dev/null || true
           sed -i 's/dtc-objs.*yamltree.o//g' scripts/dtc/Makefile
           sed -i 's/-I\$(src)\/libfdt/-I\$(src)\/libfdt -DNO_YAML/g' scripts/dtc/Makefile
+          sed -i 's/BATTERY_SCUD_SDI,/BATTERY_SCUD_SDI, BATTERY_SCUD_ATL,/g' drivers/power/supply/battery_id_via_adc.h
 
       - name: Compile Kernel Image.gz with GCC
         id: compile
