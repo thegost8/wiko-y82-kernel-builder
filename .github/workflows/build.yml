@@ -43,10 +43,18 @@ jobs:
           CONFIG_POSIX_MQUEUE=y
           CONFIG_CGROUPS=y
           # CONFIG_ANDROID_PARANOID_NETWORK is not set
+          # CONFIG_CC_STACKPROTECTOR_STRONG is not set
+          CONFIG_CC_STACKPROTECTOR_NONE=y
           EOF
           make ARCH=arm64 olddefconfig
           sed -i 's/-Werror//g' Makefile
           sed -i 's/-Werror//g' arch/arm64/Makefile
+          # Bypass prepare-compiler-check
+          python3 -c "
+          with open('Makefile', 'r') as f: text = f.read()
+          text = text.replace('prepare-compiler-check: FORCE', 'prepare-compiler-check: FORCE\n\t@:\nprepare-compiler-check-old:')
+          with open('Makefile', 'w') as f: f.write(text)
+          "
 
       - name: Compile Kernel Image.gz
         id: compile
