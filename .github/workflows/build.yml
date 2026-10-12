@@ -47,12 +47,12 @@ jobs:
           CONFIG_CC_STACKPROTECTOR_NONE=y
           EOF
           make ARCH=arm64 olddefconfig
-          sed -i 's/-Werror//g' Makefile
-          sed -i 's/-Werror//g' arch/arm64/Makefile
+          sed -i 's/-Werror /-Wno-error /g' Makefile
+          sed -i 's/-Werror$/-Wno-error/g' Makefile
+          sed -i 's/-Werror /-Wno-error /g' arch/arm64/Makefile
           sed -i 's/HOSTCFLAGS   :=/HOSTCFLAGS   := -fcommon /g' Makefile
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c_shipped 2>/dev/null || true
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/g' scripts/dtc/dtc-lexer.lex.c 2>/dev/null || true
-          # Disable broken yamltree in dtc
           sed -i 's/dtc-objs.*yamltree.o//g' scripts/dtc/Makefile
           sed -i 's/-I\$(src)\/libfdt/-I\$(src)\/libfdt -DNO_YAML/g' scripts/dtc/Makefile
           # Bypass prepare-compiler-check
