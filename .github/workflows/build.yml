@@ -12,12 +12,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev
-
-      - name: Download Android Clang 11 Toolchain
-        run: |
-          mkdir -p clang
-          curl -sL "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android11-release/clang-r383902b.tar.gz" | tar -xz -C clang
+          sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev
 
       - name: Clone Unisoc SC9863A Kernel Source
         run: |
@@ -45,12 +40,11 @@ jobs:
       - name: Compile Kernel Image.gz
         run: |
           cd kernel
-          export PATH=$GITHUB_WORKSPACE/clang/bin:$PATH
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          export CC=clang
+          export CC=clang-12
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          make -j$(nproc) CC=clang CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
+          make -j$(nproc) CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- Image.gz
           ls -lh arch/arm64/boot/Image.gz
 
       - name: Upload Kernel Artifact
@@ -63,7 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2-debian-kernel
+          tag_name: v1.3-debian-kernel
           name: Wiko Y82 / SC9863A Debian Kernel Image.gz
           files: kernel/arch/arm64/boot/Image.gz
         env:
