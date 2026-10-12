@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   build:
@@ -17,6 +16,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-12 lld-12 llvm-12 gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu make bc bison flex libssl-dev libelf-dev
+
+      - name: Checkout Builder Repo
+        uses: actions/checkout@v4
 
       - name: Clone Unisoc SC9863A Kernel Source
         run: |
@@ -52,13 +54,17 @@ jobs:
           make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-12 CLANG_TRIPLE=aarch64-linux-gnu- KCFLAGS="-w" Image.gz 2>&1 | tail -n 80 > ../error_summary.txt
           test -f arch/arm64/boot/Image.gz
 
-      - name: Report Build Log to GitHub Issue
+      - name: Save Error Log to Git
         if: steps.compile.outcome != 'success'
         run: |
-          gh issue create --title "Build Error Log" --body-file error_summary.txt
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -B build-error-log
+          cp error_summary.txt ./ERROR_SUMMARY.md
+          git add ERROR_SUMMARY.md
+          git commit -m "docs: error summary log" || true
+          git push -f origin build-error-log || true
           exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
