@@ -43,6 +43,8 @@ jobs:
           CONFIG_POSIX_MQUEUE=y
           CONFIG_CGROUPS=y
           # CONFIG_ANDROID_PARANOID_NETWORK is not set
+          # CONFIG_CC_STACKPROTECTOR_STRONG is not set
+          CONFIG_CC_STACKPROTECTOR_NONE=y
           EOF
           make ARCH=arm64 olddefconfig
           sed -i 's/-Werror /-Wno-error /g' Makefile
@@ -59,7 +61,7 @@ jobs:
         continue-on-error: true
         run: |
           cd kernel
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz 2>&1 | tail -n 80 > error_summary.txt
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-w" HOSTCFLAGS="-fcommon" Image.gz > ../full_build.log 2>&1
           test -f arch/arm64/boot/Image.gz
 
       - name: Save Error Log to Git
@@ -68,7 +70,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout -B build-error-log
-          cp kernel/error_summary.txt ./ERROR_SUMMARY.md || echo "No log" > ERROR_SUMMARY.md
+          grep -B 3 -A 10 "error:" full_build.log | head -n 150 > ./ERROR_SUMMARY.md || tail -n 100 full_build.log > ./ERROR_SUMMARY.md
           git add ERROR_SUMMARY.md
           git commit -m "docs: error summary log" || true
           git push -f origin build-error-log || true
